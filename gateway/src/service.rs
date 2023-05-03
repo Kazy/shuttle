@@ -276,18 +276,17 @@ impl GatewayService {
         limit: u32,
     ) -> Result<impl Iterator<Item = (ProjectName, Project)>, Error> {
         let mut query = QueryBuilder::new(
-            "SELECT project_name, project_state FROM projects WHERE account_name = ?1",
+            "SELECT project_name, project_state FROM projects WHERE account_name = ",
         );
 
         query.push_bind(account_name);
 
-        if limit > 0 {
-            // TODO(AlphaKeks): right now, if the user specifies `--limit 0`, they will get a
-            // response along the lines of `No projects are linked to this account`. We could
-            // either change that message or use `1` as a minimum so that projects will _always_ be
-            // displayed (assuming the user has any).
-            query.push(" LIMIT ").push_bind(limit.max(1));
-        }
+        // TODO(AlphaKeks): right now, if the user specifies `--limit 0`, they will get a
+        // response along the lines of `No projects are linked to this account`. We could
+        // either change that message or use `1` as a minimum so that projects will _always_ be
+        // displayed (assuming the user has any).
+        let limit = limit.max(1);
+        query.push(" LIMIT ").push_bind(limit);
 
         if offset > 0 {
             query.push(" OFFSET ").push_bind(offset);

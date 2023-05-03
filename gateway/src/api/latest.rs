@@ -111,7 +111,7 @@ async fn get_project(
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 struct PaginationDetails {
-    offset: u32,
+    page: u32,
     limit: u32,
 }
 
@@ -126,10 +126,11 @@ struct PaginationDetails {
 async fn get_projects_list(
     State(RouterState { service, .. }): State<RouterState>,
     User { name, .. }: User,
-    Query(PaginationDetails { offset, limit }): Query<PaginationDetails>,
+    Query(PaginationDetails { page, limit }): Query<PaginationDetails>,
 ) -> Result<AxumJson<Vec<project::Response>>, Error> {
     let projects = service
-        .iter_user_projects_detailed(&name, offset, limit)
+        // The `offset` is page size * amount of pages
+        .iter_user_projects_detailed(&name, limit * page, limit)
         .await?
         .map(|project| project::Response {
             name: project.0.to_string(),

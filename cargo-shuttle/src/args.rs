@@ -173,7 +173,7 @@ pub enum ProjectCommand {
     List {
         #[arg(long = "page", default_value = "1")]
         /// Which page to display
-        offset: u32,
+        page: u32,
 
         #[arg(long, default_value = "10")]
         /// How many projects per page to display
