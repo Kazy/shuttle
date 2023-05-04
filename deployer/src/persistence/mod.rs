@@ -571,26 +571,29 @@ mod tests {
         let (p, _) = Persistence::new_in_memory().await;
         let service_id = add_service(&p.pool).await.unwrap();
 
-        let deployments: Vec<_> = (0..10).map(|_| Deployment {
-            id: Uuid::new_v4(),
-            service_id,
-            state: State::Running,
-            last_update: Utc::now(),
-            address: None,
-            is_next: false,
-        }).collect();
+        let deployments: Vec<_> = (0..10)
+            .map(|_| Deployment {
+                id: Uuid::new_v4(),
+                service_id,
+                state: State::Running,
+                last_update: Utc::now(),
+                address: None,
+                is_next: false,
+            })
+            .collect();
 
         for deployment in &deployments {
             p.insert_deployment(deployment.clone()).await.unwrap();
         }
 
-        assert_eq!(p.get_deployments(&service_id, 0, 5).await.unwrap(),
+        assert_eq!(
+            p.get_deployments(&service_id, 0, 5).await.unwrap(),
             deployments[..5]
         );
-        assert_eq!(p.get_deployments(&service_id, 5, 5).await.unwrap(),
+        assert_eq!(
+            p.get_deployments(&service_id, 5, 5).await.unwrap(),
             deployments[5..10]
         );
-
     }
 
     #[tokio::test(flavor = "multi_thread")]

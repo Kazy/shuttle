@@ -186,7 +186,28 @@ pub enum ProjectCommand {
         #[arg(long, default_value = "10")]
         /// How many projects per page to display
         limit: u32,
+
+        #[arg(long = "state", value_delimiter = ',')]
+        /// Project states to filter by
+        states: Vec<ProjectState>,
     },
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ProjectState {
+    Creating,
+    Attaching,
+    Recreating,
+    Starting,
+    Restarting,
+    Started,
+    Ready,
+    Stopping,
+    Stopped,
+    Rebooting,
+    Destroying,
+    Destroyed,
+    Errored,
 }
 
 #[derive(Parser, Debug)]

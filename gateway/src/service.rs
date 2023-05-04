@@ -33,6 +33,7 @@ use x509_parser::prelude::parse_x509_pem;
 use x509_parser::time::ASN1Time;
 
 use crate::acme::{AccountWrapper, AcmeClient, CustomDomain};
+use crate::api::latest::ProjectState;
 use crate::args::ContextArgs;
 use crate::project::{Project, ProjectCreating};
 use crate::task::{self, BoxedTask, TaskBuilder};
@@ -274,11 +275,22 @@ impl GatewayService {
         account_name: &AccountName,
         offset: u32,
         limit: u32,
+        states: Vec<ProjectState>,
     ) -> Result<impl Iterator<Item = (ProjectName, Project)>, Error> {
         let mut query = QueryBuilder::new(
             "SELECT project_name, project_state FROM projects WHERE account_name = ",
         );
+
         query.push_bind(account_name);
+
+        if !states.is_empty() {
+            query
+                .push(" AND project_state IN ")
+                .push_tuples(states, |mut query, state| {
+                    query.push_bind(format!("{:?}", state).to_lowercase());
+                });
+        }
+
         query.push(" LIMIT ").push_bind(limit);
 
         if offset > 0 {
@@ -783,7 +795,7 @@ pub mod tests {
             }
         );
         assert_eq!(
-            svc.iter_user_projects_detailed(&neo, 0, u32::MAX)
+            svc.iter_user_projects_detailed(&neo, 0, u32::MAX, vec![])
                 .await
                 .unwrap()
                 .map(|item| item.0)
@@ -802,7 +814,7 @@ pub mod tests {
         all_projects.insert(0, matrix.clone());
 
         assert_eq!(
-            svc.iter_user_projects_detailed(&neo, 0, u32::MAX)
+            svc.iter_user_projects_detailed(&neo, 0, u32::MAX, vec![])
                 .await
                 .unwrap()
                 .map(|item| item.0)
@@ -810,7 +822,7 @@ pub mod tests {
             all_projects
         );
         assert_eq!(
-            svc.iter_user_projects_detailed(&neo, 0, 20)
+            svc.iter_user_projects_detailed(&neo, 0, 20, vec![])
                 .await
                 .unwrap()
                 .map(|item| item.0)
@@ -818,7 +830,7 @@ pub mod tests {
             all_projects[..20]
         );
         assert_eq!(
-            svc.iter_user_projects_detailed(&neo, 20, 20)
+            svc.iter_user_projects_detailed(&neo, 20, 20, vec![])
                 .await
                 .unwrap()
                 .map(|item| item.0)

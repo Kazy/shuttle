@@ -84,12 +84,32 @@ impl StatusResponse {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, IntoParams)]
+#[derive(Debug, Clone, Deserialize, IntoParams)]
 struct PaginationDetails {
     /// Page to fetch, starting from 0.
     page: Option<u32>,
     /// Number of results per page.
     limit: Option<u32>,
+    /// States to filter projects by.
+    states: Option<Vec<ProjectState>>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(untagged)]
+pub enum ProjectState {
+    Creating,
+    Attaching,
+    Recreating,
+    Starting,
+    Restarting,
+    Started,
+    Ready,
+    Stopping,
+    Stopped,
+    Rebooting,
+    Destroying,
+    Destroyed,
+    Errored,
 }
 
 #[instrument(skip(service))]
@@ -131,13 +151,17 @@ async fn get_project(
 async fn get_projects_list(
     State(RouterState { service, .. }): State<RouterState>,
     User { name, .. }: User,
-    Query(PaginationDetails { page, limit }): Query<PaginationDetails>,
+    Query(PaginationDetails {
+        page,
+        limit,
+        states,
+    }): Query<PaginationDetails>,
 ) -> Result<AxumJson<Vec<project::Response>>, Error> {
     let limit = limit.unwrap_or(u32::MAX);
     let page = page.unwrap_or(0);
     let projects = service
         // The `offset` is page size * amount of pages
-        .iter_user_projects_detailed(&name, limit * page, limit)
+        .iter_user_projects_detailed(&name, limit * page, limit, states.unwrap_or_default())
         .await?
         .map(|project| project::Response {
             name: project.0.to_string(),

@@ -16,6 +16,8 @@ use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tracing::error;
 use uuid::Uuid;
 
+use crate::args::ProjectState;
+
 pub struct Client {
     api_url: ApiUrl,
     api_key: Option<ApiKey>,
@@ -128,12 +130,17 @@ impl Client {
         self.get(path).await
     }
 
-    pub async fn get_projects_list(&self, page: u32, limit: u32) -> Result<Vec<project::Response>> {
-        let path = format!(
-            "/projects?limit={}&page={}",
-            limit,
-            page.saturating_sub(1)
-        );
+    pub async fn get_projects_list(
+        &self,
+        page: u32,
+        limit: u32,
+        states: Vec<ProjectState>,
+    ) -> Result<Vec<project::Response>> {
+        let mut path = format!("/projects?limit={}&page={}", limit, page.saturating_sub(1));
+
+        for state in states {
+            write!(&mut path, "&state={:?}", state)?;
+        }
 
         self.get(path).await
     }

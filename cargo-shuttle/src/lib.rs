@@ -4,6 +4,7 @@ pub mod config;
 mod init;
 mod provisioner_server;
 
+use args::ProjectState;
 use indicatif::ProgressBar;
 use shuttle_common::claims::{ClaimService, InjectPropagation};
 use shuttle_common::models::deployment::get_deployments_table;
@@ -127,8 +128,13 @@ impl Shuttle {
             Command::Project(ProjectCommand::Status { follow }) => {
                 self.project_status(&self.client()?, follow).await
             }
-            Command::Project(ProjectCommand::List { page, limit }) => {
-                self.projects_list(&self.client()?, page, limit).await
+            Command::Project(ProjectCommand::List {
+                page,
+                limit,
+                states,
+            }) => {
+                self.projects_list(&self.client()?, page, limit, states)
+                    .await
             }
             Command::Project(ProjectCommand::Stop) => self.project_delete(&self.client()?).await,
         }
@@ -986,13 +992,18 @@ impl Shuttle {
         Ok(())
     }
 
-    async fn projects_list(&self, client: &Client, page: u32, limit: u32) -> Result<()> {
+    async fn projects_list(
+        &self,
+        client: &Client,
+        page: u32,
+        limit: u32,
+        states: Vec<ProjectState>,
+    ) -> Result<()> {
         if limit == 0 {
-            println!();
             return Ok(());
         }
 
-        let projects = client.get_projects_list(page, limit).await?;
+        let projects = client.get_projects_list(page, limit, states).await?;
         let projects_table = project::get_table(&projects);
 
         println!("{projects_table}");
