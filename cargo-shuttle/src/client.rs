@@ -191,7 +191,7 @@ impl Client {
         let path = format!(
             "/projects/{}/deployments?page={}&limit={}",
             project.as_str(),
-            page,
+            page.saturating_sub(1),
             limit
         );
 
