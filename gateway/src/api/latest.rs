@@ -85,7 +85,7 @@ impl StatusResponse {
 }
 
 #[derive(Debug, Clone, Deserialize, IntoParams)]
-struct PaginationDetails {
+struct ProjectListParams {
     /// Page to fetch, starting from 0.
     page: Option<u32>,
     /// Number of results per page.
@@ -145,17 +145,13 @@ async fn get_project(
         (status = 500, description = "Server internal error.")
     ),
     params(
-        PaginationDetails
+        ProjectListParams
     )
 )]
 async fn get_projects_list(
     State(RouterState { service, .. }): State<RouterState>,
     User { name, .. }: User,
-    Query(PaginationDetails {
-        page,
-        limit,
-        states,
-    }): Query<PaginationDetails>,
+    Query(ProjectListParams { page, limit, states }): Query<ProjectListParams>,
 ) -> Result<AxumJson<Vec<project::Response>>, Error> {
     let limit = limit.unwrap_or(u32::MAX);
     let page = page.unwrap_or(0);
