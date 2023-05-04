@@ -11,6 +11,7 @@ use crate::deployment::deploy_layer::{self, LogRecorder, LogType};
 use crate::deployment::ActiveDeploymentsGetter;
 use crate::proxy::AddressGetter;
 use error::{Error, Result};
+use sqlx::QueryBuilder;
 
 use std::net::SocketAddr;
 use std::path::Path;
@@ -189,9 +190,25 @@ impl Persistence {
         get_deployment(&self.pool, id).await
     }
 
-    pub async fn get_deployments(&self, service_id: &Uuid) -> Result<Vec<Deployment>> {
-        sqlx::query_as("SELECT * FROM deployments WHERE service_id = ? ORDER BY last_update")
-            .bind(service_id)
+    pub async fn get_deployments(
+        &self,
+        service_id: &Uuid,
+        offset: u32,
+        limit: u32,
+    ) -> Result<Vec<Deployment>> {
+        let mut query = QueryBuilder::new("SELECT * FROM deployments WHERE service_id = ");
+
+        query
+            .push_bind(service_id)
+            .push(" ORDER BY last_update LIMIT ")
+            .push_bind(limit);
+
+        if offset > 0 {
+            query.push(" OFFSET ").push_bind(offset);
+        }
+
+        query
+            .build_query_as()
             .fetch_all(&self.pool)
             .await
             .map_err(Error::from)
@@ -653,7 +670,7 @@ mod tests {
             p.insert_deployment(deployment.clone()).await.unwrap();
         }
 
-        let actual = p.get_deployments(&service_id).await.unwrap();
+        let actual = p.get_deployments(&service_id, 0, u32::MAX).await.unwrap();
         let expected = vec![deployment_stopped, deployment_crashed, deployment_running];
 
         assert_eq!(actual, expected, "deployments should be sorted by time");
@@ -743,7 +760,7 @@ mod tests {
         p.cleanup_invalid_states().await.unwrap();
 
         let actual: Vec<_> = p
-            .get_deployments(&service_id)
+            .get_deployments(&service_id, 0, u32::MAX)
             .await
             .unwrap()
             .into_iter()

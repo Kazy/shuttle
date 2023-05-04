@@ -92,7 +92,7 @@ impl Client {
         let path = format!(
             "/projects/{}/services/{}/resources",
             project.as_str(),
-            project.as_str()
+            project.as_str(),
         );
 
         self.get(path).await
@@ -185,8 +185,15 @@ impl Client {
     pub async fn get_deployments(
         &self,
         project: &ProjectName,
+        page: u32,
+        limit: u32,
     ) -> Result<Vec<deployment::Response>> {
-        let path = format!("/projects/{}/deployments", project.as_str());
+        let path = format!(
+            "/projects/{}/deployments?page={}&limit={}",
+            project.as_str(),
+            page,
+            limit
+        );
 
         self.get(path).await
     }

@@ -791,7 +791,9 @@ pub mod tests {
             vec![matrix.clone()]
         );
 
-        let mut all_projects: Vec<ProjectName> = (1..60).map(|p| ProjectName(format!("matrix-{p}"))).collect();
+        let mut all_projects: Vec<ProjectName> = (1..60)
+            .map(|p| ProjectName(format!("matrix-{p}")))
+            .collect();
         for p in &all_projects {
             svc.create_project(p.clone(), neo.clone(), false, 0)
                 .await
