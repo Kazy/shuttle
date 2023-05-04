@@ -791,6 +791,39 @@ pub mod tests {
             vec![matrix.clone()]
         );
 
+        let mut all_projects: Vec<ProjectName> = (1..60).map(|p| ProjectName(format!("matrix-{p}"))).collect();
+        for p in &all_projects {
+            svc.create_project(p.clone(), neo.clone(), false, 0)
+                .await
+                .unwrap();
+        }
+        all_projects.insert(0, matrix.clone());
+
+        assert_eq!(
+            svc.iter_user_projects_detailed(&neo, 0, u32::MAX)
+                .await
+                .unwrap()
+                .map(|item| item.0)
+                .collect::<Vec<_>>(),
+            all_projects
+        );
+        assert_eq!(
+            svc.iter_user_projects_detailed(&neo, 0, 20)
+                .await
+                .unwrap()
+                .map(|item| item.0)
+                .collect::<Vec<_>>(),
+            all_projects[..20]
+        );
+        assert_eq!(
+            svc.iter_user_projects_detailed(&neo, 20, 20)
+                .await
+                .unwrap()
+                .map(|item| item.0)
+                .collect::<Vec<_>>(),
+            all_projects[20..40]
+        );
+
         // assert_eq!(
         //     svc.iter_user_projects_detailed_filtered(neo.clone(), "ready".to_string())
         //         .await
