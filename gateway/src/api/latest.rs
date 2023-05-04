@@ -30,7 +30,7 @@ use tracing::{field, instrument, trace};
 use ttl_cache::TtlCache;
 
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
-use utoipa::{Modify, OpenApi};
+use utoipa::{Modify, OpenApi, IntoParams};
 use utoipa_swagger_ui::SwaggerUi;
 use uuid::Uuid;
 use x509_parser::nom::AsBytes;
@@ -109,9 +109,11 @@ async fn get_project(
     Ok(AxumJson(response))
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, IntoParams)]
 struct PaginationDetails {
+    /// Page to fetch, starting from 0.
     page: Option<u32>,
+    /// Number of results per page.
     limit: Option<u32>,
 }
 
@@ -121,6 +123,9 @@ struct PaginationDetails {
     responses(
         (status = 200, description = "Successfully got the projects list.", body = [shuttle_common::models::project::Response]),
         (status = 500, description = "Server internal error.")
+    ),
+    params(
+        PaginationDetails
     )
 )]
 async fn get_projects_list(
