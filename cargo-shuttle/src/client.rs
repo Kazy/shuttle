@@ -132,7 +132,7 @@ impl Client {
         let path = format!(
             "/projects?limit={}&page={}",
             limit,
-            page.checked_sub(1).unwrap_or(1)
+            page.saturating_sub(1)
         );
 
         self.get(path).await
