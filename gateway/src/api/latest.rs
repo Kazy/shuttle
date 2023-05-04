@@ -111,8 +111,8 @@ async fn get_project(
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 struct PaginationDetails {
-    page: u32,
-    limit: u32,
+    page: Option<u32>,
+    limit: Option<u32>,
 }
 
 #[utoipa::path(
@@ -128,6 +128,8 @@ async fn get_projects_list(
     User { name, .. }: User,
     Query(PaginationDetails { page, limit }): Query<PaginationDetails>,
 ) -> Result<AxumJson<Vec<project::Response>>, Error> {
+    let limit = limit.unwrap_or(u32::MAX);
+    let page = page.unwrap_or(0);
     let projects = service
         // The `offset` is page size * amount of pages
         .iter_user_projects_detailed(&name, limit * page, limit)
