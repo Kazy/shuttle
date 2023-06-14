@@ -297,6 +297,7 @@ impl ToTokens for Loader {
     }
 }
 
+/// Configuration options specified by the user.
 #[derive(Debug, Default)]
 struct MainArgs {
     tracing_args: Option<TracingAttr>,
@@ -322,8 +323,8 @@ impl Parse for MainArgs {
                     let value = input.parse()?;
 
                     args.tracing_args = Some(TracingAttr {
-                        attr: ident,
-                        equal_sign,
+                        _attr: ident,
+                        _equal_sign: equal_sign,
                         value,
                     });
                 }
@@ -337,20 +338,18 @@ impl Parse for MainArgs {
 }
 
 /// An attribute to customize the tracing registry setup by shuttle
-///
-/// TODO: make this generic for more options in the future?
 #[derive(Debug)]
 struct TracingAttr {
-    attr: Ident,
-    equal_sign: Punct,
+    _attr: Ident,
+    _equal_sign: Punct,
     value: Path,
 }
 
 impl Parse for TracingAttr {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            attr: input.parse()?,
-            equal_sign: input.parse()?,
+            _attr: input.parse()?,
+            _equal_sign: input.parse()?,
             value: input.parse()?,
         })
     }
@@ -401,10 +400,12 @@ mod tests {
                         .or_else(|_| shuttle_runtime::tracing_subscriber::EnvFilter::try_new("INFO"))
                         .unwrap();
 
-                shuttle_runtime::tracing_subscriber::registry()
+                let registry = shuttle_runtime::tracing_subscriber::registry()
                     .with(filter_layer)
-                    .with(logger)
-                    .init();
+                    .with(logger);
+
+
+                registry.init();
 
                 simple().await
             }
@@ -484,10 +485,12 @@ mod tests {
                         .or_else(|_| shuttle_runtime::tracing_subscriber::EnvFilter::try_new("INFO"))
                         .unwrap();
 
-                shuttle_runtime::tracing_subscriber::registry()
+                let registry = shuttle_runtime::tracing_subscriber::registry()
                     .with(filter_layer)
-                    .with(logger)
-                    .init();
+                    .with(logger);
+
+
+                registry.init();
 
                 let pool = shuttle_runtime::get_resource(
                     shuttle_shared_db::Postgres::new(),
@@ -609,10 +612,12 @@ mod tests {
                         .or_else(|_| shuttle_runtime::tracing_subscriber::EnvFilter::try_new("INFO"))
                         .unwrap();
 
-                shuttle_runtime::tracing_subscriber::registry()
+                let registry = shuttle_runtime::tracing_subscriber::registry()
                     .with(filter_layer)
-                    .with(logger)
-                    .init();
+                    .with(logger);
+
+
+                registry.init();
 
                 let vars = std::collections::HashMap::from_iter(factory.get_secrets().await?.into_iter().map(|(key, value)| (format!("secrets.{}", key), value)));
                 let pool = shuttle_runtime::get_resource (
