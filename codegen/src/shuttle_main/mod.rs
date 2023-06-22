@@ -361,6 +361,8 @@ mod tests {
     use quote::quote;
     use syn::{parse_quote, Ident};
 
+    use crate::shuttle_main::MainArgs;
+
     use super::{Builder, BuilderOptions, Input, Loader};
 
     #[test]
@@ -627,6 +629,48 @@ mod tests {
                 ).await.context(format!("failed to provision {}", stringify!(shuttle_shared_db::Postgres)))?;
 
                 complex(pool).await
+            }
+        };
+
+        assert_eq!(actual.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn output_with_tracing_argument() {
+        let tracing = parse_quote!(
+            tracing_layer = Logger::init
+        );
+        let input = Loader {
+            fn_ident: parse_quote!(simple),
+            fn_inputs: Vec::new(),
+            fn_return: parse_quote!(ShuttleSimple),
+            fn_args: MainArgs { tracing_args: Some(tracing) },
+        };
+
+        let actual = quote!(#input);
+        let expected = quote! {
+            async fn loader(
+                mut _factory: shuttle_runtime::ProvisionerFactory,
+                mut _resource_tracker: shuttle_runtime::ResourceTracker,
+                logger: shuttle_runtime::Logger,
+            ) -> ShuttleSimple {
+                use shuttle_runtime::Context;
+                use shuttle_runtime::tracing_subscriber::prelude::*;
+
+                let filter_layer =
+                    shuttle_runtime::tracing_subscriber::EnvFilter::try_from_default_env()
+                        .or_else(|_| shuttle_runtime::tracing_subscriber::EnvFilter::try_new("INFO"))
+                        .unwrap();
+
+                let registry = shuttle_runtime::tracing_subscriber::registry()
+                    .with(filter_layer)
+                    .with(logger);
+
+                let registry = registry.with(Logger::init());
+
+                registry.init();
+
+                simple().await
             }
         };
 
